@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageData } from '../components/ChatMessage';
@@ -56,11 +55,13 @@ const useMedicalBot = () => {
     const temperature = localStorage.getItem('medicalbot-temperature');
     const specialty = localStorage.getItem('medicalbot-specialty');
     const accuracy = localStorage.getItem('medicalbot-accuracy');
+    const apiKey = localStorage.getItem('medicalbot-api-key');
     
     setLlmConfig({
       provider: provider || 'openai',
       model: model || 'gpt-4o',
       temperature: temperature ? parseFloat(temperature) : 0.7,
+      apiKey: apiKey || undefined
     });
     
     setMedicalSpecialty(specialty || 'general');
@@ -84,6 +85,128 @@ const useMedicalBot = () => {
     
     return containsMedicalTerm || isShortQuestion || lowercaseText.includes('video');
   }, []);
+
+  const generateResponse = useCallback(async (query: string) => {
+    // This function will replace the hard-coded responses with more dynamic ones
+    // based on the query and medical terms detection
+    
+    const lowercaseQuery = query.toLowerCase();
+    
+    // Extract main topics from query
+    const extractTopics = () => {
+      // This is a simple keyword extraction - in a real app, this would use NLP
+      const topics = MEDICAL_TERMS.filter(term => lowercaseQuery.includes(term.toLowerCase()));
+      return topics.length > 0 ? topics : ['general health'];
+    };
+    
+    const topics = extractTopics();
+    const mainTopic = topics[0];
+    
+    // Generate specific response based on detected topics
+    if (lowercaseQuery.includes('malaria')) {
+      return {
+        content: `Here's information about malaria based on current medical knowledge:`,
+        causes: [
+          "Infection with Plasmodium parasites transmitted by Anopheles mosquitoes",
+          "Most commonly P. falciparum, P. vivax, P. ovale, and P. malariae species",
+          "Transmission through the bite of an infected female Anopheles mosquito",
+          "Rarely through blood transfusion, organ transplant, or shared needles"
+        ],
+        treatments: [
+          "Artemisinin-based combination therapies (ACTs) for P. falciparum",
+          "Chloroquine for chloroquine-sensitive strains",
+          "Atovaquone-proguanil, mefloquine, or doxycycline for prevention",
+          "Supportive care for severe cases including IV fluids and antipyretics",
+          "Primaquine for P. vivax or P. ovale to prevent relapses"
+        ],
+        cautions: [
+          "Seek immediate medical attention for suspected malaria, especially after travel",
+          "Complete the full course of antimalarial medication",
+          "Use insecticide-treated bed nets and insect repellent in endemic areas",
+          "Prophylactic medication should be taken when traveling to endemic regions"
+        ],
+        summary: "Malaria is a serious parasitic infection transmitted by mosquitoes that requires prompt diagnosis and treatment. Symptoms include fever, chills, headache, and flu-like illness that can progress to severe complications if untreated. Prevention includes mosquito avoidance measures and appropriate prophylactic medication."
+      };
+    }
+    
+    if (lowercaseQuery.includes('headache')) {
+      return {
+        content: "Based on your question about headaches, here's some relevant information:",
+        causes: getHeadacheCauses(medicalAccuracy),
+        treatments: getHeadacheTreatments(medicalSpecialty),
+        cautions: [
+          "Seek immediate medical attention for severe, sudden headaches",
+          "Consult a doctor if headaches are recurring or worsening",
+          "Be cautious with medication overuse which can cause rebound headaches",
+          "Track triggers like certain foods, activities, or environmental factors"
+        ],
+        summary: "Headaches are often caused by tension, dehydration, or lack of sleep. Most can be treated with OTC pain relievers, hydration, and rest, but severe or recurring headaches warrant medical attention."
+      };
+    }
+    
+    if (lowercaseQuery.includes('covid') || lowercaseQuery.includes('coronavirus')) {
+      return {
+        content: "Regarding your COVID-19 question, here's current medical information:",
+        causes: [
+          "Infection with SARS-CoV-2 virus",
+          "Airborne transmission through respiratory droplets",
+          "Close contact with infected individuals",
+          "Contact with contaminated surfaces (less common)"
+        ],
+        treatments: [
+          "Antiviral medications like Paxlovid for high-risk patients",
+          "Monoclonal antibody treatments for certain eligible patients",
+          "Symptomatic care including rest, fluids, and fever reducers",
+          "Oxygen therapy or ventilation for severe cases"
+        ],
+        cautions: [
+          "Follow current public health guidelines on prevention",
+          "Consider vaccination and boosters as recommended by health authorities",
+          "Seek immediate care for difficulty breathing, persistent chest pain, confusion",
+          "Isolate according to current guidelines if infected"
+        ],
+        summary: "COVID-19 is caused by the SARS-CoV-2 virus and presents with variable symptoms including fever, cough, fatigue, and loss of taste/smell. Treatment depends on severity, with most mild cases recovering with home care while severe cases may require hospitalization."
+      };
+    }
+    
+    if (lowercaseQuery.includes('diabetes')) {
+      return {
+        content: "Regarding diabetes management and care, here's relevant information:",
+        causes: [
+          "Type 1: Autoimmune destruction of insulin-producing beta cells",
+          "Type 2: Insulin resistance and relative insulin deficiency",
+          "Gestational: Temporary insulin resistance during pregnancy",
+          "Genetic predisposition and environmental factors"
+        ],
+        treatments: [
+          "Regular blood glucose monitoring",
+          "Insulin therapy for Type 1 and advanced Type 2",
+          "Oral medications like metformin for Type 2",
+          "Diet and exercise modifications",
+          "Regular foot care and eye examinations"
+        ],
+        cautions: [
+          "Monitor for signs of hypoglycemia and hyperglycemia",
+          "Maintain regular healthcare appointments",
+          "Follow dietary guidelines provided by healthcare professionals",
+          "Screen regularly for complications affecting eyes, kidneys, nerves, and heart"
+        ],
+        summary: "Diabetes is a chronic condition affecting blood glucose regulation. Management involves medication, lifestyle modifications, and regular monitoring. Consistent control helps prevent serious complications affecting multiple organ systems."
+      };
+    }
+    
+    // Default response for other medical queries
+    return {
+      content: `Based on your query about "${mainTopic}", here's some general medical information:`,
+      summary: `Your question relates to ${mainTopic}. Medical conditions require personalized assessment by healthcare professionals who can evaluate your specific situation and provide appropriate guidance.`,
+      recommendations: [
+        "Consult with a healthcare professional for personalized advice",
+        "Keep track of any symptoms and their patterns",
+        "Maintain healthy lifestyle habits including proper nutrition and exercise",
+        "Follow preventive healthcare guidelines appropriate for your age and risk factors"
+      ]
+    };
+  }, [medicalSpecialty, medicalAccuracy]);
 
   const processMessage = useCallback(async (userMessage: string) => {
     setIsProcessing(true);
@@ -117,9 +240,7 @@ const useMedicalBot = () => {
     }
     
     try {
-      // In a real app, this would call an API with the selected LLM
-      // For demonstration, we'll use mock data with some variation based on settings
-      
+      // In a real app, this would call an external API with the selected LLM
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
       
       let botResponse: MessageData;
@@ -133,52 +254,15 @@ const useMedicalBot = () => {
           summary: "The video shows common respiratory symptoms. I notice signs of congestion and fatigue which are typical for viral upper respiratory infections.",
           recommendations: getMedicalRecommendations(medicalSpecialty)
         };
-      } else if (userMessage.toLowerCase().includes('headache')) {
-        botResponse = {
-          id: uuidv4(),
-          content: "Based on your mention of a headache, here's some information that might be helpful:",
-          role: 'bot',
-          timestamp: new Date(),
-          causes: getHeadacheCauses(medicalAccuracy),
-          treatments: getHeadacheTreatments(medicalSpecialty),
-          cautions: [
-            "Seek immediate medical attention for severe, sudden headaches",
-            "Consult a doctor if headaches are recurring or worsening",
-            "Be cautious with medication overuse which can cause rebound headaches",
-            "Track triggers like certain foods, activities, or environmental factors"
-          ],
-          summary: "Headaches are often caused by tension, dehydration, or lack of sleep. Most can be treated with OTC pain relievers, hydration, and rest, but severe or recurring headaches warrant medical attention."
-        };
-      } else if (userMessage.toLowerCase().includes('cold') || userMessage.toLowerCase().includes('flu')) {
-        botResponse = {
-          id: uuidv4(),
-          content: "I see you're asking about a cold or flu. Here's some relevant information:",
-          role: 'bot',
-          timestamp: new Date(),
-          causes: [
-            "Viral infection (different viruses cause colds vs. influenza)",
-            "Exposure to infected individuals",
-            "Touching contaminated surfaces then touching face",
-            "Droplets in the air from coughs and sneezes"
-          ],
-          treatments: getFluTreatments(medicalSpecialty, medicalAccuracy),
-          cautions: [
-            "High fever, difficulty breathing, or chest pain require medical attention",
-            "Elderly, young children, pregnant women, and those with chronic conditions should seek care early",
-            "Avoid spreading by washing hands and staying home when sick",
-            "Annual flu vaccination is recommended for prevention"
-          ],
-          summary: "Colds and flu are viral infections spread through contact and airborne droplets. Most cases can be managed with rest, fluids, and OTC medications, but certain symptoms or high-risk individuals require medical care. Prevention includes handwashing and vaccination."
-        };
       } else {
-        // Generic medical response with some customization based on settings
+        // Generate dynamic response based on query content
+        const responseData = await generateResponse(userMessage);
+        
         botResponse = {
           id: uuidv4(),
-          content: `I understand you have a medical question about "${userMessage}". While I can provide general information, please consult with a healthcare professional for personalized advice.`,
+          ...responseData,
           role: 'bot',
-          timestamp: new Date(),
-          summary: getGenericSummary(medicalSpecialty),
-          recommendations: getMedicalRecommendations(medicalSpecialty)
+          timestamp: new Date()
         };
       }
       
@@ -200,7 +284,7 @@ const useMedicalBot = () => {
       setIsProcessing(false);
     }
     
-  }, [isMedicalQuery, medicalSpecialty, medicalAccuracy]);
+  }, [isMedicalQuery, medicalSpecialty, medicalAccuracy, generateResponse]);
 
   // Helper functions to generate responses based on settings
   const getVideoAnalysisResponse = () => {

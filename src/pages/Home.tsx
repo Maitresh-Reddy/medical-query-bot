@@ -1,13 +1,20 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bot, MessageCircle, Video, Upload, Settings, Heart, Activity, Stethoscope } from 'lucide-react';
+import { ArrowRight, Bot, MessageCircle, Video, Upload, Settings, Heart, Activity, 
+         Stethoscope, Pill, Syringe, Thermometer, Brain, Lungs } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const navigate = useNavigate();
+  const [animationActive, setAnimationActive] = useState(false);
+
+  // Start animations after component mounts
+  useEffect(() => {
+    setAnimationActive(true);
+  }, []);
 
   const floatingAnimation = {
     y: [-3, 3, -3],
@@ -16,7 +23,7 @@ const Home = () => {
       repeat: Infinity,
       ease: "easeInOut"
     }
-  }
+  };
 
   const pulseAnimation = {
     scale: [1, 1.05, 1],
@@ -26,7 +33,7 @@ const Home = () => {
       repeat: Infinity,
       ease: "easeInOut"
     }
-  }
+  };
 
   const heartbeatAnimation = {
     scale: [1, 1.1, 0.9, 1.05, 1],
@@ -36,7 +43,26 @@ const Home = () => {
       repeatDelay: 1.2,
       ease: "easeInOut"
     }
-  }
+  };
+
+  const breathingAnimation = {
+    scale: [1, 1.08, 1],
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  };
+
+  const pulsePathAnimation = {
+    pathLength: [0, 1],
+    opacity: [0.2, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-950">
@@ -69,33 +95,113 @@ const Home = () => {
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="relative mb-16">
-            <motion.div 
-              className="absolute top-0 right-[20%] -z-10 opacity-20 dark:opacity-10"
-              animate={heartbeatAnimation}
-            >
-              <Heart className="h-32 w-32 text-red-500" />
-            </motion.div>
-            
-            <motion.div 
-              className="absolute top-12 left-[15%] -z-10 opacity-20 dark:opacity-10"
-              animate={floatingAnimation}
-            >
-              <Stethoscope className="h-36 w-36 text-medical-primary" />
-            </motion.div>
-            
-            <motion.div 
-              className="absolute bottom-0 right-[10%] -z-10 opacity-20 dark:opacity-10"
-              animate={pulseAnimation}
-            >
-              <Activity className="h-24 w-24 text-green-500" />
-            </motion.div>
+            {/* Medical themed animations */}
+            <div className="absolute inset-0 -z-10 overflow-hidden">
+              {/* Heartbeat EKG line */}
+              <motion.svg 
+                className="absolute top-20 right-0 w-1/3 h-20 text-red-500 opacity-10"
+                viewBox="0 0 100 20"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={animationActive ? {
+                  pathLength: [0, 1],
+                  opacity: [0, 0.15]
+                } : {}}
+                transition={{ duration: 2, ease: "easeInOut" }}
+              >
+                <motion.path
+                  d="M0,10 L10,10 L15,2 L20,18 L25,0 L30,10 L100,10"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  fill="none"
+                  animate={pulsePathAnimation}
+                />
+              </motion.svg>
+              
+              {/* Floating medical icons */}
+              <motion.div 
+                className="absolute top-0 right-[20%] -z-10"
+                animate={heartbeatAnimation}
+              >
+                <Heart className="h-32 w-32 text-red-500 opacity-20 dark:opacity-10" />
+              </motion.div>
+              
+              <motion.div 
+                className="absolute top-40 right-[10%] -z-10"
+                animate={floatingAnimation}
+              >
+                <Pill className="h-20 w-20 text-blue-500 opacity-20 dark:opacity-10" />
+              </motion.div>
+              
+              <motion.div 
+                className="absolute top-12 left-[15%] -z-10"
+                animate={floatingAnimation}
+              >
+                <Stethoscope className="h-36 w-36 text-medical-primary opacity-20 dark:opacity-10" />
+              </motion.div>
+              
+              <motion.div 
+                className="absolute bottom-0 left-[20%] -z-10"
+                animate={breathingAnimation}
+              >
+                <Lungs className="h-28 w-28 text-purple-500 opacity-20 dark:opacity-10" />
+              </motion.div>
+              
+              <motion.div 
+                className="absolute bottom-0 right-[10%] -z-10"
+                animate={pulseAnimation}
+              >
+                <Activity className="h-24 w-24 text-green-500 opacity-20 dark:opacity-10" />
+              </motion.div>
+              
+              <motion.div 
+                className="absolute top-32 left-[40%] -z-10"
+                animate={pulseAnimation}
+              >
+                <Brain className="h-20 w-20 text-amber-500 opacity-20 dark:opacity-10" />
+              </motion.div>
+              
+              <motion.div 
+                className="absolute bottom-20 right-[30%] -z-10"
+                animate={floatingAnimation}
+              >
+                <Thermometer className="h-16 w-16 text-red-400 opacity-20 dark:opacity-10" />
+              </motion.div>
+            </div>
 
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-center mb-12"
+              className="text-center mb-12 relative z-10"
             >
+              <div className="relative inline-block mb-4">
+                <motion.div
+                  className="absolute -inset-1 rounded-full bg-gradient-to-r from-medical-primary/30 to-medical-secondary/30 blur-lg"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.5, 0.8, 0.5]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+                <motion.div 
+                  className="relative bg-white dark:bg-gray-900 rounded-full p-4 border border-medical-primary/20"
+                  animate={{
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{
+                    duration: 5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <Stethoscope className="h-16 w-16 text-medical-primary" />
+                </motion.div>
+              </div>
+              
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-medical-primary to-medical-accent">
                 Your Intelligent Health Assistant
               </h2>
@@ -121,6 +227,7 @@ const Home = () => {
               icon={<Video />}
               title="Video Analysis"
               description="Upload videos showing symptoms or conditions for AI analysis and medical insights."
+              highlight={true}
             />
             <FeatureCard 
               icon={<Upload />}
@@ -149,7 +256,18 @@ const Home = () => {
                 onClick={() => navigate('/chat')}
                 className="bg-medical-primary hover:bg-medical-accent text-white px-8 py-6 rounded-full text-lg font-medium flex items-center gap-2 transition-all hover:shadow-lg"
               >
-                Start Chatting <ArrowRight className="ml-2" />
+                <motion.span
+                  animate={{ 
+                    x: [0, 5, 0] 
+                  }}
+                  transition={{ 
+                    repeat: Infinity, 
+                    duration: 1.5,
+                    repeatDelay: 0.5
+                  }}
+                >
+                  Start Chatting <ArrowRight className="ml-1" />
+                </motion.span>
               </Button>
             </motion.div>
           </div>
@@ -166,14 +284,20 @@ const Home = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description }) => (
+const FeatureCard = ({ icon, title, description, highlight = false }) => (
   <motion.div 
     whileHover={{ y: -5, scale: 1.02 }}
-    className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all"
+    className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all ${
+      highlight ? 'ring-2 ring-medical-primary/30' : ''
+    }`}
   >
-    <div className="inline-flex items-center justify-center p-3 bg-medical-primary/10 rounded-full mb-4">
+    <motion.div 
+      className="inline-flex items-center justify-center p-3 bg-medical-primary/10 rounded-full mb-4"
+      whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+      transition={{ duration: 0.5 }}
+    >
       {React.cloneElement(icon, { className: "h-6 w-6 text-medical-primary" })}
-    </div>
+    </motion.div>
     <h3 className="text-xl font-semibold mb-2">{title}</h3>
     <p className="text-gray-600 dark:text-gray-300">{description}</p>
   </motion.div>
