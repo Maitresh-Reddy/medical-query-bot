@@ -10,6 +10,7 @@ export interface MessageData {
   treatments?: string[];
   cautions?: string[];
   summary?: string;
+  recommendations?: string[]; // Added this property
 }
 
 interface ChatMessageProps {
@@ -20,7 +21,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
   const isBot = message.role === 'bot';
 
   const renderStructuredResponse = () => {
-    if (!isBot || (!message.causes && !message.treatments && !message.cautions)) {
+    if (!isBot || (!message.causes && !message.treatments && !message.cautions && !message.recommendations)) {
       return <p className="whitespace-pre-wrap">{message.content}</p>;
     }
 
@@ -56,6 +57,17 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
             <ul className="list-disc pl-5 space-y-1">
               {message.cautions.map((caution, i) => (
                 <li key={i}>{caution}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {message.recommendations && message.recommendations.length > 0 && (
+          <div className="mt-3">
+            <h4 className="font-medium text-medical-dark dark:text-medical-muted mb-2">Recommendations:</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              {message.recommendations.map((recommendation, i) => (
+                <li key={i}>{recommendation}</li>
               ))}
             </ul>
           </div>
