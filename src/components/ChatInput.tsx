@@ -95,7 +95,7 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
           />
           {isListening && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <span className="inline-block h-2 w-2 rounded-full bg-medical-primary animate-pulse-slow"></span>
+              <span className="inline-block h-2 w-2 rounded-full bg-medical-primary animate-pulse"></span>
             </div>
           )}
         </div>
