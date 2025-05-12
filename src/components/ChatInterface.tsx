@@ -5,15 +5,19 @@ import ChatInput from './ChatInput';
 import MedicalDisclaimerBanner from './MedicalDisclaimerBanner';
 import useMedicalBot from '../hooks/useMedicalBot';
 import { Button } from '@/components/ui/button';
-import { Video, Upload } from 'lucide-react';
+import { Video, Upload, SkipBack, SkipForward, Camera, VideoOff } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ChatInterface = () => {
   const { messages, processMessage, isProcessing } = useMedicalBot();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isVideoUploaded, setIsVideoUploaded] = useState(false);
+  const [isLiveVideoActive, setIsLiveVideoActive] = useState(false);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -22,6 +26,15 @@ const ChatInterface = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Clean up media stream on component unmount
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -38,23 +51,85 @@ const ChatInterface = () => {
 
   const handleVideoSubmit = () => {
     if (videoFile) {
-      // In a real implementation, this would process the video
       processMessage(`I've uploaded a video titled: ${videoFile.name}. Please analyze it for medical relevance.`);
       setIsVideoUploaded(false);
       setVideoFile(null);
     }
   };
 
+  const startLiveVideo = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      mediaStreamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      setIsLiveVideoActive(true);
+      toast.success('Live video started');
+    } catch (error) {
+      toast.error('Could not access camera and microphone');
+      console.error('Error accessing media devices:', error);
+    }
+  };
+
+  const stopLiveVideo = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    setIsLiveVideoActive(false);
+  };
+
+  const analyzeLiveVideo = () => {
+    if (isLiveVideoActive) {
+      processMessage("Please analyze my current symptoms from the live video feed I'm showing.");
+    }
+  };
+  
+  const handleNavigateMessages = (direction: 'back' | 'forward') => {
+    if (direction === 'back' && currentMessageIndex > 0) {
+      setCurrentMessageIndex(prev => prev - 1);
+    } else if (direction === 'forward' && currentMessageIndex < messages.length - 1) {
+      setCurrentMessageIndex(prev => prev + 1);
+    }
+  };
+
+  // Messages to display - for navigation purposes
+  const displayedMessages = messages.slice(0, currentMessageIndex + 1);
+
   return (
     <div className="flex flex-col h-full">
       <MedicalDisclaimerBanner />
       
       <div className="flex-1 overflow-y-auto p-4 space-y-6 chat-container">
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+        <AnimatePresence initial={false} mode="popLayout">
+          {displayedMessages.map((message) => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ChatMessage message={message} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        
         {isVideoUploaded && videoFile && (
-          <div className="flex flex-col items-start p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-start p-4 bg-gray-100 dark:bg-gray-800 rounded-lg"
+          >
             <p className="mb-2 font-medium">Video ready to process: {videoFile.name}</p>
             <div className="w-full max-w-xs">
               <video 
@@ -78,10 +153,70 @@ const ChatInterface = () => {
                 Cancel
               </Button>
             </div>
-          </div>
+          </motion.div>
         )}
+
+        {isLiveVideoActive && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-start p-4 bg-gray-100 dark:bg-gray-800 rounded-lg"
+          >
+            <p className="mb-2 font-medium">Live Video Feed</p>
+            <div className="w-full max-w-xs">
+              <video 
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full rounded-md mb-2"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={analyzeLiveVideo} className="flex items-center gap-2">
+                <Video className="h-4 w-4" />
+                Analyze Live Feed
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={stopLiveVideo}
+              >
+                <VideoOff className="h-4 w-4 mr-1" />
+                Stop Video
+              </Button>
+            </div>
+          </motion.div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
+
+      {messages.length > 1 && (
+        <div className="flex justify-center gap-4 py-2 border-t border-gray-200 dark:border-gray-700">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleNavigateMessages('back')}
+            disabled={currentMessageIndex === 0}
+          >
+            <SkipBack className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          <span className="text-sm text-gray-500 flex items-center">
+            {currentMessageIndex + 1} / {messages.length}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleNavigateMessages('forward')}
+            disabled={currentMessageIndex === messages.length - 1}
+          >
+            Next
+            <SkipForward className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
 
       {isProcessing && (
         <motion.div 
@@ -120,7 +255,7 @@ const ChatInterface = () => {
       )}
       
       <div className="relative">
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 flex items-center space-x-4">
           <label htmlFor="video-upload" className="cursor-pointer inline-block">
             <div className="flex items-center gap-1 text-sm text-gray-500 hover:text-medical-primary">
               <Upload className="h-4 w-4" />
@@ -134,6 +269,16 @@ const ChatInterface = () => {
               className="hidden" 
             />
           </label>
+          
+          {!isLiveVideoActive ? (
+            <button 
+              onClick={startLiveVideo}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-medical-primary"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Start Live Video</span>
+            </button>
+          ) : null}
         </div>
         <ChatInput onSendMessage={processMessage} disabled={isProcessing} />
       </div>
