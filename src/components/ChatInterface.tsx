@@ -5,7 +5,7 @@ import ChatInput from './ChatInput';
 import MedicalDisclaimerBanner from './MedicalDisclaimerBanner';
 import useMedicalBot from '../hooks/useMedicalBot';
 import { Button } from '@/components/ui/button';
-import { Video, Upload, SkipBack, SkipForward, Camera, VideoOff } from 'lucide-react';
+import { Video, Upload, Camera, VideoOff } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,7 +15,6 @@ const ChatInterface = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isVideoUploaded, setIsVideoUploaded] = useState(false);
   const [isLiveVideoActive, setIsLiveVideoActive] = useState(false);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
@@ -92,17 +91,6 @@ const ChatInterface = () => {
       processMessage("Please analyze my current symptoms from the live video feed I'm showing.");
     }
   };
-  
-  const handleNavigateMessages = (direction: 'back' | 'forward') => {
-    if (direction === 'back' && currentMessageIndex > 0) {
-      setCurrentMessageIndex(prev => prev - 1);
-    } else if (direction === 'forward' && currentMessageIndex < messages.length - 1) {
-      setCurrentMessageIndex(prev => prev + 1);
-    }
-  };
-
-  // Messages to display - for navigation purposes
-  const displayedMessages = messages.slice(0, currentMessageIndex + 1);
 
   return (
     <div className="flex flex-col h-full">
@@ -110,7 +98,7 @@ const ChatInterface = () => {
       
       <div className="flex-1 overflow-y-auto p-4 space-y-6 chat-container">
         <AnimatePresence initial={false} mode="popLayout">
-          {displayedMessages.map((message) => (
+          {messages.map((message) => (
             <motion.div
               key={message.id}
               initial={{ opacity: 0, y: 20 }}
@@ -191,32 +179,6 @@ const ChatInterface = () => {
         
         <div ref={messagesEndRef} />
       </div>
-
-      {messages.length > 1 && (
-        <div className="flex justify-center gap-4 py-2 border-t border-gray-200 dark:border-gray-700">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleNavigateMessages('back')}
-            disabled={currentMessageIndex === 0}
-          >
-            <SkipBack className="h-4 w-4 mr-1" />
-            Previous
-          </Button>
-          <span className="text-sm text-gray-500 flex items-center">
-            {currentMessageIndex + 1} / {messages.length}
-          </span>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleNavigateMessages('forward')}
-            disabled={currentMessageIndex === messages.length - 1}
-          >
-            Next
-            <SkipForward className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-      )}
 
       {isProcessing && (
         <motion.div 

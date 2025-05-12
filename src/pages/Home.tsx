@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bot, MessageCircle, Video, Upload, Settings } from 'lucide-react';
+import { ArrowRight, Bot, MessageCircle, Video, Upload, Settings, Heart, Activity, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -9,13 +9,41 @@ import { useNavigate } from 'react-router-dom';
 const Home = () => {
   const navigate = useNavigate();
 
+  const floatingAnimation = {
+    y: [-3, 3, -3],
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+
+  const pulseAnimation = {
+    scale: [1, 1.05, 1],
+    opacity: [0.9, 1, 0.9],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+
+  const heartbeatAnimation = {
+    scale: [1, 1.1, 0.9, 1.05, 1],
+    transition: {
+      duration: 0.8,
+      repeat: Infinity,
+      repeatDelay: 1.2,
+      ease: "easeInOut"
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-950">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center">
           <motion.div
-            initial={{ rotate: -10 }}
-            animate={{ rotate: 10 }}
+            animate={{ rotate: [-10, 10] }}
             transition={{ repeat: Infinity, duration: 2, repeatType: 'reverse' }}
             className="mr-2"
           >
@@ -40,20 +68,43 @@ const Home = () => {
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-medical-primary to-medical-accent">
-              Your Intelligent Health Assistant
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Get reliable medical information instantly with our AI-powered medical assistant. 
-              Ask questions, upload videos for analysis, or use voice commands for a seamless experience.
-            </p>
-          </motion.div>
+          <div className="relative mb-16">
+            <motion.div 
+              className="absolute top-0 right-[20%] -z-10 opacity-20 dark:opacity-10"
+              animate={heartbeatAnimation}
+            >
+              <Heart className="h-32 w-32 text-red-500" />
+            </motion.div>
+            
+            <motion.div 
+              className="absolute top-12 left-[15%] -z-10 opacity-20 dark:opacity-10"
+              animate={floatingAnimation}
+            >
+              <Stethoscope className="h-36 w-36 text-medical-primary" />
+            </motion.div>
+            
+            <motion.div 
+              className="absolute bottom-0 right-[10%] -z-10 opacity-20 dark:opacity-10"
+              animate={pulseAnimation}
+            >
+              <Activity className="h-24 w-24 text-green-500" />
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-medical-primary to-medical-accent">
+                Your Intelligent Health Assistant
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Get reliable medical information instantly with our AI-powered medical assistant. 
+                Ask questions, upload videos for analysis, or use voice commands for a seamless experience.
+              </p>
+            </motion.div>
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -78,20 +129,30 @@ const Home = () => {
             />
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="text-center"
-          >
-            <Button 
-              size="lg" 
-              onClick={() => navigate('/chat')}
-              className="bg-medical-primary hover:bg-medical-accent text-white px-8 py-6 rounded-full text-lg font-medium flex items-center gap-2 transition-all hover:shadow-lg"
+          <div className="relative">
+            <motion.div 
+              className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-64 h-64 -z-10"
+              animate={{
+                boxShadow: ["0 0 20px 10px rgba(56, 189, 248, 0.1)", "0 0 30px 15px rgba(56, 189, 248, 0.2)", "0 0 20px 10px rgba(56, 189, 248, 0.1)"]
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="text-center"
             >
-              Start Chatting <ArrowRight className="ml-2" />
-            </Button>
-          </motion.div>
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/chat')}
+                className="bg-medical-primary hover:bg-medical-accent text-white px-8 py-6 rounded-full text-lg font-medium flex items-center gap-2 transition-all hover:shadow-lg"
+              >
+                Start Chatting <ArrowRight className="ml-2" />
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </main>
 

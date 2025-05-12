@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,10 +19,20 @@ const Admin = () => {
   const [modelName, setModelName] = useState('gpt-4o');
   const [temperature, setTemperature] = useState(0.7);
   const [apiProvider, setApiProvider] = useState('openai');
+  
+  // Gemini specific
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [geminiModel, setGeminiModel] = useState('gemini-pro');
+  
+  // Hugging Face specific
+  const [hfApiKey, setHfApiKey] = useState('');
+  const [hfModel, setHfModel] = useState('google/flan-t5-xxl');
+  const [hfTask, setHfTask] = useState('text2text-generation');
 
   // Local LLM settings
   const [localModelPath, setLocalModelPath] = useState('');
   const [localModelLoaded, setLocalModelLoaded] = useState(false);
+  const [localModelType, setLocalModelType] = useState('llama3-medical');
 
   // Medical specific parameters
   const [medicalSpecialty, setMedicalSpecialty] = useState('general');
@@ -41,10 +50,20 @@ const Admin = () => {
     // In a real app, these would be saved to a database
     if (activeTab === 'cloud') {
       localStorage.setItem('medicalbot-provider', apiProvider);
-      localStorage.setItem('medicalbot-model', modelName);
+      
+      if (apiProvider === 'openai') {
+        localStorage.setItem('medicalbot-model', modelName);
+      } else if (apiProvider === 'gemini') {
+        localStorage.setItem('medicalbot-model', geminiModel);
+      } else if (apiProvider === 'huggingface') {
+        localStorage.setItem('medicalbot-model', hfModel);
+        localStorage.setItem('medicalbot-hf-task', hfTask);
+      }
+      
       localStorage.setItem('medicalbot-temperature', temperature.toString());
     } else {
       localStorage.setItem('medicalbot-local-model-path', localModelPath);
+      localStorage.setItem('medicalbot-local-model-type', localModelType);
       localStorage.setItem('medicalbot-local-model-loaded', localModelLoaded.toString());
     }
     
@@ -129,6 +148,8 @@ const Admin = () => {
                       >
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic (Claude)</option>
+                        <option value="gemini">Google (Gemini)</option>
+                        <option value="huggingface">Hugging Face</option>
                         <option value="mistral">Mistral AI</option>
                         <option value="cohere">Cohere</option>
                         <option value="perplexity">Perplexity</option>
@@ -136,96 +157,184 @@ const Admin = () => {
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium mb-1">API Key</label>
-                      <Input
-                        type="password"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="Enter your API key"
-                        className="w-full"
-                      />
-                    </div>
+                    {/* API Key input field */}
+                    {apiProvider !== 'gemini' && apiProvider !== 'huggingface' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">API Key</label>
+                        <Input
+                          type="password"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          placeholder="Enter your API key"
+                          className="w-full"
+                        />
+                      </div>
+                    )}
 
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Model</label>
-                      {apiProvider === 'openai' && (
-                        <select 
-                          value={modelName}
-                          onChange={(e) => setModelName(e.target.value)}
-                          className="w-full p-2 border rounded-md bg-background text-foreground"
-                        >
-                          <option value="gpt-4o">GPT-4o</option>
-                          <option value="gpt-4o-mini">GPT-4o Mini</option>
-                          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                          <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
-                        </select>
-                      )}
-                      {apiProvider === 'anthropic' && (
-                        <select 
-                          value={modelName}
-                          onChange={(e) => setModelName(e.target.value)}
-                          className="w-full p-2 border rounded-md bg-background text-foreground"
-                        >
-                          <option value="claude-3-opus">Claude 3 Opus</option>
-                          <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                          <option value="claude-3-haiku">Claude 3 Haiku</option>
-                        </select>
-                      )}
-                      {apiProvider === 'mistral' && (
-                        <select 
-                          value={modelName}
-                          onChange={(e) => setModelName(e.target.value)}
-                          className="w-full p-2 border rounded-md bg-background text-foreground"
-                        >
-                          <option value="mistral-large">Mistral Large</option>
-                          <option value="mistral-medium">Mistral Medium</option>
-                          <option value="mistral-small">Mistral Small</option>
-                        </select>
-                      )}
-                      {apiProvider === 'cohere' && (
-                        <select 
-                          value={modelName}
-                          onChange={(e) => setModelName(e.target.value)}
-                          className="w-full p-2 border rounded-md bg-background text-foreground"
-                        >
-                          <option value="command-r-plus">Command R+</option>
-                          <option value="command-r">Command R</option>
-                        </select>
-                      )}
-                      {apiProvider === 'perplexity' && (
-                        <select 
-                          value={modelName}
-                          onChange={(e) => setModelName(e.target.value)}
-                          className="w-full p-2 border rounded-md bg-background text-foreground"
-                        >
-                          <option value="llama-3.1-sonar-small-128k-online">Sonar Small (8B)</option>
-                          <option value="llama-3.1-sonar-large-128k-online">Sonar Large (70B)</option>
-                          <option value="llama-3.1-sonar-huge-128k-online">Sonar Huge (405B)</option>
-                        </select>
-                      )}
-                      {apiProvider === 'azure' && (
-                        <select 
-                          value={modelName}
-                          onChange={(e) => setModelName(e.target.value)}
-                          className="w-full p-2 border rounded-md bg-background text-foreground"
-                        >
-                          <option value="gpt-4">GPT-4</option>
-                          <option value="gpt-35-turbo">GPT-3.5 Turbo</option>
-                        </select>
-                      )}
-                    </div>
+                    {/* Gemini specific settings */}
+                    {apiProvider === 'gemini' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Gemini API Key</label>
+                          <Input
+                            type="password"
+                            value={geminiApiKey}
+                            onChange={(e) => setGeminiApiKey(e.target.value)}
+                            placeholder="Enter your Gemini API key"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Gemini Model</label>
+                          <select 
+                            value={geminiModel}
+                            onChange={(e) => setGeminiModel(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="gemini-pro">Gemini Pro</option>
+                            <option value="gemini-pro-vision">Gemini Pro Vision</option>
+                            <option value="gemini-ultra">Gemini Ultra</option>
+                            <option value="gemini-flash">Gemini Flash</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Hugging Face specific settings */}
+                    {apiProvider === 'huggingface' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Hugging Face API Key</label>
+                          <Input
+                            type="password"
+                            value={hfApiKey}
+                            onChange={(e) => setHfApiKey(e.target.value)}
+                            placeholder="Enter your Hugging Face API key"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Model</label>
+                          <select 
+                            value={hfModel}
+                            onChange={(e) => setHfModel(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="google/flan-t5-xxl">Flan-T5-XXL (Medical)</option>
+                            <option value="microsoft/BiomedNLP-PubMedBERT">PubMedBERT (Biomedical)</option>
+                            <option value="medicalai/ClinicalBERT">ClinicalBERT</option>
+                            <option value="epfl-llm/meditron-70b">Meditron 70B</option>
+                            <option value="google/med-palm">Med-PaLM</option>
+                            <option value="medicalai/clinical-t5">Clinical T5</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Task</label>
+                          <select 
+                            value={hfTask}
+                            onChange={(e) => setHfTask(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="text2text-generation">Text Generation</option>
+                            <option value="text-classification">Text Classification</option>
+                            <option value="token-classification">Token Classification</option>
+                            <option value="question-answering">Question Answering</option>
+                            <option value="summarization">Summarization</option>
+                            <option value="translation">Translation</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Standard model selector for non-Gemini/HF providers */}
+                    {apiProvider !== 'gemini' && apiProvider !== 'huggingface' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Model</label>
+                        {apiProvider === 'openai' && (
+                          <select 
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+                          </select>
+                        )}
+                        {apiProvider === 'anthropic' && (
+                          <select 
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="claude-3-opus">Claude 3 Opus</option>
+                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                            <option value="claude-3-haiku">Claude 3 Haiku</option>
+                          </select>
+                        )}
+                        {apiProvider === 'mistral' && (
+                          <select 
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="mistral-large">Mistral Large</option>
+                            <option value="mistral-medium">Mistral Medium</option>
+                            <option value="mistral-small">Mistral Small</option>
+                          </select>
+                        )}
+                        {apiProvider === 'cohere' && (
+                          <select 
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="command-r-plus">Command R+</option>
+                            <option value="command-r">Command R</option>
+                          </select>
+                        )}
+                        {apiProvider === 'perplexity' && (
+                          <select 
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="llama-3.1-sonar-small-128k-online">Sonar Small (8B)</option>
+                            <option value="llama-3.1-sonar-large-128k-online">Sonar Large (70B)</option>
+                            <option value="llama-3.1-sonar-huge-128k-online">Sonar Huge (405B)</option>
+                          </select>
+                        )}
+                        {apiProvider === 'azure' && (
+                          <select 
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded-md bg-background text-foreground"
+                          >
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-35-turbo">GPT-3.5 Turbo</option>
+                          </select>
+                        )}
+                      </div>
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="local" className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">Local Model Selection</label>
                       <select 
+                        value={localModelType}
+                        onChange={(e) => setLocalModelType(e.target.value)}
                         className="w-full p-2 border rounded-md bg-background text-foreground mb-2"
                       >
                         <option value="llama3-medical">Llama 3 (Medical fine-tuned)</option>
                         <option value="mistral-medical">Mistral Medical</option>
+                        <option value="huggingface-medical-small">HF Medical Small (ONNX)</option>
+                        <option value="huggingface-medical-large">HF Medical Large (ONNX)</option>
                         <option value="onnx-whisper">ONNX Whisper (Speech-to-Text)</option>
+                        <option value="webgpu-med-inference">WebGPU Medical Inference</option>
                         <option value="custom">Custom Model</option>
                       </select>
                       
