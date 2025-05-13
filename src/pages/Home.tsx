@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Bot, MessageCircle, Video, Upload, Settings, Heart, Activity, 
-         Stethoscope, Pill, Syringe, Thermometer, Brain, Lung } from 'lucide-react';
+         Stethoscope, Pill, Syringe, Thermometer, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -142,7 +142,7 @@ const Home = () => {
                 className="absolute bottom-0 left-[20%] -z-10"
                 animate={breathingAnimation}
               >
-                <Lung className="h-28 w-28 text-purple-500 opacity-20 dark:opacity-10" />
+                <Stethoscope className="h-28 w-28 text-purple-500 opacity-20 dark:opacity-10" />
               </motion.div>
               
               <motion.div 
